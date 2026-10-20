@@ -1,0 +1,77 @@
+
+openapi: 3.0.3
+
+info:
+  title: SMART 4.0 - Planta N2 API
+  description: Contrato inicial das APIs da Planta N2
+  version: 0.1.0
+  license:
+    name: Uso acadêmico
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Ambiente local de desenvolvimento
+
+tags:
+  - name: Telemetria
+    description: Consulta do estado da planta e telemetria
+
+  - name: MES
+    description: Indicadores de produção
+
+paths:
+  /api/v1/telemetry/status:
+    get:
+      operationId: consultarStatusPlanta
+      tags:
+        - Telemetria
+      summary: Consultar o estado atual da planta
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Consulta realizada com sucesso
+        '401':
+          description: Token ausente, inválido ou expirado
+        '403':
+          description: Usuário sem permissão para a operação
+
+  /api/v1/telemetry/commands:
+    post:
+      operationId: enviarComandoTelemetria
+      tags:
+        - Telemetria
+      summary: Enviar um comando relacionado à telemetria
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Comando processado
+        '401':
+          description: Token ausente, inválido ou expirado
+        '403':
+          description: Usuário sem permissão para a operação
+
+  /api/v1/mes/oee/dashboard:
+    get:
+      operationId: consultarDashboardOEE
+      tags:
+        - MES
+      summary: Consultar indicadores OEE
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Consulta realizada com sucesso
+        '401':
+          description: Token ausente, inválido ou expirado
+        '403':
+          description: Usuário sem permissão para a operação
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
