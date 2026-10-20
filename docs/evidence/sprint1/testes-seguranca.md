@@ -16,6 +16,7 @@ realizados no Auth Gateway.
 |---|---|---|---|
 | Requisição sem token | HTTP 401 | HTTP 401 | PASS |
 | Requisição com token inválido | HTTP 401 | HTTP 401 | PASS |
+| Requisição com token expirado | HTTP 401 | HTTP 401 | PASS |
 | Perfil OPERATOR acessando rota de teste ADMIN | HTTP 403 | HTTP 403 | PASS |
 | Perfil ADMIN acessando sua rota de teste | HTTP 200 | HTTP 200 | PASS |
 
@@ -24,6 +25,7 @@ realizados no Auth Gateway.
 - Servidor Express executando localmente.
 - Validação de JWT com a biblioteca jsonwebtoken.
 - Verificação da assinatura e validade do token.
+- Rejeição de tokens expirados.
 - Middleware de autenticação.
 - Middleware de autorização por perfil.
 - Rota de teste protegida para demonstrar o controle de acesso.
@@ -37,11 +39,12 @@ realizados no Auth Gateway.
 - Os contratos de entrada e saída das APIs ainda precisam ser
   detalhados e revisados.
 - A integração com a planta física não foi realizada.
-- O teste específico de token expirado ainda precisa ser registrado.
+- Os testes ainda não constituem uma suíte automatizada.
 
 ## 5. Próximas atividades
 
 - Validar a matriz RBAC com os responsáveis pelas funcionalidades.
-- Testar tokens expirados.
 - Aplicar as regras aprovadas às rotas reais.
-- Documentar os resultados e revisar o contrato OpenAPI.
+- Automatizar os testes de segurança.
+- Revisar o contrato OpenAPI.
+- Registrar as decisões e aprovações da equipe.
