@@ -35,7 +35,10 @@ function autenticarToken(req, res, next) {
   const token = authorization.split(" ")[1];
 
   try {
-    req.usuario = jwt.verify(token, JWT_SECRET);
+    req.usuario = jwt.verify(token, JWT_SECRET, {
+      algorithms: ["HS256"]
+    });
+
     next();
   } catch (erro) {
     return res.status(401).json({

@@ -3,8 +3,13 @@ openapi: 3.0.3
 
 info:
   title: SMART 4.0 - Planta N2 API
-  description: Contrato inicial das APIs da Planta N2
-  version: 0.1.0
+  description: >
+    Contrato inicial das APIs da Planta N2 Smart 4.0.
+    Documenta a autenticacao JWT, as regras de acesso
+    e as rotas previstas para integracao entre os grupos.
+    As rotas de Telemetria e MES ainda dependem de
+    confirmacao e implementacao pelos grupos responsaveis.
+  version: 0.2.0
   license:
     name: Uso acadêmico
     url: https://opensource.org/licenses/MIT
@@ -14,44 +19,119 @@ servers:
     description: Ambiente local de desenvolvimento
 
 tags:
+  - name: Gateway
+    description: Monitoramento e testes de seguranca do API Gateway
+
   - name: Telemetria
-    description: Consulta do estado da planta e telemetria
+    description: Consulta do estado da planta e comandos operacionais
 
   - name: MES
-    description: Indicadores de produção
+    description: Indicadores de producao
 
 paths:
+  /health:
+    get:
+      operationId: consultarSaudeGateway
+      tags:
+        - Gateway
+      summary: Verificar se o Gateway esta ativo
+      description: >
+        Rota publica de verificacao do funcionamento
+        basico do auth-gateway.
+      security: []
+      responses:
+        '200':
+          description: Gateway ativo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: smart40-auth-gateway
+
+  /api/v1/test/admin:
+    get:
+      operationId: testarAcessoAdmin
+      tags:
+        - Gateway
+      summary: Testar autorizacao do perfil ADMIN
+      description: >
+        Rota demonstrativa implementada no auth-gateway.
+        Exige JWT valido com role ADMIN.
+        Nao representa uma funcionalidade operacional da planta.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Acesso autorizado para ADMIN
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem:
+                    type: string
+                    example: Acesso autorizado
+                  perfil:
+                    type: string
+                    example: ADMIN
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /api/v1/telemetry/status:
     get:
       operationId: consultarStatusPlanta
       tags:
         - Telemetria
       summary: Consultar o estado atual da planta
+      description: >
+        Rota prevista no contrato inicial.
+        A implementacao e a integracao ainda precisam
+        ser confirmadas com os grupos responsaveis.
+        A permissao OPERATOR esta prevista na matriz RBAC.
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Consulta realizada com sucesso
         '401':
-          description: Token ausente, inválido ou expirado
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Usuário sem permissão para a operação
+          $ref: '#/components/responses/Forbidden'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
 
   /api/v1/telemetry/commands:
     post:
       operationId: enviarComandoTelemetria
       tags:
         - Telemetria
-      summary: Enviar um comando relacionado à telemetria
+      summary: Enviar um comando operacional
+      description: >
+        Rota prevista no contrato inicial.
+        O formato do comando, suas validacoes e a
+        integracao com os dispositivos industriais
+        ainda precisam ser confirmados.
+        A autorizacao do usuario nao substitui
+        as protecoes fisicas da planta.
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Comando processado
         '401':
-          description: Token ausente, inválido ou expirado
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Usuário sem permissão para a operação
+          $ref: '#/components/responses/Forbidden'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
 
   /api/v1/mes/oee/dashboard:
     get:
@@ -59,15 +139,22 @@ paths:
       tags:
         - MES
       summary: Consultar indicadores OEE
+      description: >
+        Rota prevista no contrato inicial.
+        A implementacao e a integracao ainda precisam
+        ser confirmadas com o grupo responsavel.
+        A permissao MANAGER esta prevista na matriz RBAC.
       security:
         - BearerAuth: []
       responses:
         '200':
           description: Consulta realizada com sucesso
         '401':
-          description: Token ausente, inválido ou expirado
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Usuário sem permissão para a operação
+          $ref: '#/components/responses/Forbidden'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
 
 components:
   securitySchemes:
@@ -75,3 +162,39 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: >
+        Token JWT enviado no cabecalho Authorization
+        com o prefixo Bearer. O auth-gateway valida
+        a assinatura usando HS256 e verifica a expiracao.
+
+  responses:
+    Unauthorized:
+      description: Token ausente, invalido ou expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+
+    Forbidden:
+      description: Usuario autenticado sem permissao
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+
+    NotImplemented:
+      description: Funcionalidade ainda nao implementada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+
+  schemas:
+    Erro:
+      type: object
+      properties:
+        erro:
+          type: string
+          description: Mensagem explicando o erro
+      required:
+        - erro
