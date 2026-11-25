@@ -1,20 +1,28 @@
 
 import os
 import sys
+import json
+import argparse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 try:
     import jwt
 except ImportError:
-    print("Erro: biblioteca PyJWT nao instalada.")
-    print("Execute: python -m pip install PyJWT")
+    print("Instale a biblioteca: python -m pip install PyJWT")
     sys.exit(1)
 
 
+# Define os quatro perfis autorizados pelo RBAC.
 PERFIS = ("OPERATOR", "ENGINEER", "MANAGER", "ADMIN")
 
+# Define as cinco origens previstas na Sprint 3.
+ORIGENS = tuple(
+    f"unidade1-grupo{i}" for i in range(1, 6)
+)
 
+
+# Carrega o segredo JWT sem armazená-lo no código.
 def carregar_segredo():
     caminho_env = (
         Path(__file__).resolve().parent
@@ -26,57 +34,104 @@ def carregar_segredo():
     segredo = os.environ.get("JWT_SECRET")
 
     if not segredo and caminho_env.exists():
-        for linha in caminho_env.read_text(encoding="utf-8").splitlines():
-            linha = linha.strip()
+        for linha in caminho_env.read_text(
+            encoding="utf-8"
+        ).splitlines():
 
-            if linha.startswith("JWT_SECRET="):
-                segredo = linha.split("=", 1)[1].strip().strip('"').strip("'")
+            if linha.strip().startswith("JWT_SECRET="):
+                segredo = linha.split(
+                    "=", 1
+                )[1].strip().strip('"').strip("'")
                 break
 
-    if not segredo or segredo == "SUBSTITUA_POR_UM_SEGREDO_LOCAL":
-        print("Erro: configure JWT_SECRET no arquivo .env do Gateway.")
-        sys.exit(1)
+    if not segredo or len(segredo) < 32:
+        sys.exit("Configure um JWT_SECRET seguro.")
 
     return segredo
 
 
-def gerar_token(perfil, segredo, expirado=False):
+# Gera um JWT com identificação, perfil, origem e validade.
+def gerar_token(perfil, origem, segredo, expirado=False):
+
     agora = datetime.now(timezone.utc)
 
     expiracao = (
         agora - timedelta(seconds=1)
         if expirado
-        else agora + timedelta(minutes=15)
+        else agora + timedelta(hours=24)
     )
 
     payload = {
+        "sub": origem,
         "role": perfil,
+        "origem": origem,
         "iat": agora,
         "exp": expiracao
     }
 
-    return jwt.encode(payload, segredo, algorithm="HS256")
+    return jwt.encode(
+        payload,
+        segredo,
+        algorithm="HS256"
+    )
 
 
+# Executa o gerador para um grupo e perfil autorizados.
 def main():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--origem",
+        choices=ORIGENS,
+        required=True
+    )
+
+    parser.add_argument(
+        "--perfil",
+        choices=PERFIS,
+        required=True
+    )
+
+    parser.add_argument(
+        "--expirado",
+        action="store_true"
+    )
+
+    args = parser.parse_args()
+
     segredo = carregar_segredo()
 
-    print("\nSMART 4.0 - Gerador de Tokens JWT de Teste")
-    print("=" * 50)
+    token = gerar_token(
+        args.perfil,
+        args.origem,
+        segredo,
+        args.expirado
+    )
 
-    for perfil in PERFIS:
-        token = gerar_token(perfil, segredo)
+    # Armazena o token em uma pasta ignorada pelo Git.
+    pasta = Path(__file__).resolve().parent / "tokens-local"
+    pasta.mkdir(exist_ok=True)
 
-        print(f"\nPERFIL: {perfil}")
-        print(f"TOKEN: {token}")
+    sufixo = "-expirado" if args.expirado else ""
 
-    token_expirado = gerar_token("ADMIN", segredo, expirado=True)
+    arquivo = pasta / (
+        f"{args.origem}-{args.perfil}{sufixo}.json"
+    )
 
-    print("\nPERFIL: ADMIN (TOKEN EXPIRADO)")
-    print(f"TOKEN: {token_expirado}")
+    arquivo.write_text(
+        json.dumps({"token": token}, indent=2),
+        encoding="utf-8"
+    )
 
-    print("\nATENCAO: utilize estes tokens apenas em ambiente de teste.")
-    print("Nao compartilhe os tokens nem publique a saida no GitHub.")
+    # Exibe apenas informações não secretas.
+    print("SMART 4.0 - Gerador JWT - Sprint 3")
+    print(f"Origem: {args.origem}")
+    print(f"Perfil: {args.perfil}")
+    print("Algoritmo: HS256")
+    print("Validade:", "Expirado" if args.expirado else "24 horas")
+    print("Token gerado com sucesso.")
+    print(f"Arquivo local: {arquivo.name}")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,23 @@
+# Dependencias do Node.js
 node_modules/
+
+# Variaveis de ambiente e segredos
 .env
 .env.*
 !.env.example
+
+# Arquivos Python
+__pycache__/
+*.pyc
+.venv/
+
+# Tokens gerados localmente
+tokens-local/
+tokens-local.json
+
+# Logs de execucao
+*.log
+
+# Arquivos temporarios
+.DS_Store
+Thumbs.db
